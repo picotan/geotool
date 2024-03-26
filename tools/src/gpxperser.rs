@@ -3,16 +3,12 @@ pub mod gpx_parser {
     use std::ffi::OsString;
     use std::fs::File;
     use std::io::BufReader;
-    use std::time::SystemTime;
     use chrono::{DateTime, NaiveDateTime};
     use num::complex::ComplexFloat;
     use xml::attribute::OwnedAttribute;
     use xml::EventReader;
-    use xml::name::OwnedName;
     use xml::reader::XmlEvent;
-    use xml::reader::XmlEvent::ProcessingInstruction;
-    use crate::geometry::geometry_core::{Geometry, LatLon};
-    use crate::gpx::Gpx::*;
+    use crate::gpx::gpx::*;
     use chrono::prelude::Utc;
 
     pub struct GPXParser {
@@ -27,12 +23,25 @@ pub mod gpx_parser {
             let file = BufReader::new(file); // Buffering is important for performance
             Some(GPXParser{file: name.clone(), parser: EventReader::new(file)})
         }
-        pub fn open(self: &mut Self) -> Option<Vec<Track>> {
-            let mut trk: Vec<Track> = Vec::new();
+        pub fn open(self: &mut Self) -> Option<Track> {
+            let mut route = self.process_gpx();
+            let mut track = Track::new();
+            match route {
+                Some(x) => {
+                    track.routes = x;
+                    Some(track)
+                },
+                _ => {
+                    None
+                }
+            }
+        }
+        pub fn process_gpx(self: &mut Self) -> Option<Vec<TrackRoute>> {
+            let mut trk: Vec<TrackRoute> = Vec::new();
 
             loop {
                 match self.parser.next() {
-                    Ok(XmlEvent::StartElement { name, attributes, .. }) => {
+                    Ok(XmlEvent::StartElement { name, .. }) => {
                         match name.local_name.as_str() {
                             "trk" => { trk.push(self.process_route().unwrap()); }
                             "extensions" => {
@@ -47,9 +56,8 @@ pub mod gpx_parser {
                         println!("End of document");
                         break;
                     }
-                    _ => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on parse gpx: {e}");
                         return None;
                     }
                     // There's more: https://docs.rs/xml-rs/latest/xml/reader/enum.XmlEvent.html
@@ -58,8 +66,8 @@ pub mod gpx_parser {
             };
             Some(trk)
         }
-        fn process_route(self: &mut Self) -> Option<(Track)> {
-            let mut route = Track::new();
+        fn process_route(self: &mut Self) -> Option<(TrackRoute)> {
+            let mut route = TrackRoute::new();
             let mut tag: String = String::new();
             let mut message = String::new();
 
@@ -86,8 +94,8 @@ pub mod gpx_parser {
                         let name = name.local_name;
                         if (tag == name) {
                             match name.as_str() {
-                                "name" => { route.name = OsString::from(&message); }
-                                "comment" => { route.comment = OsString::from(&message); }
+                                "name" => { route.name = String::from(&message); }
+                                "comment" => { route.comment = String::from(&message); }
                                 _ => {
 
                                 }
@@ -104,18 +112,18 @@ pub mod gpx_parser {
                     Ok(XmlEvent::Whitespace(str)) => {
                         println!("-> {str}");
                     }
-                    _ => {
-                    }
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on parse route: {e}");
                         return None;
+                    }
+                    _ => {
                     }
                 }
             }
             Some(route.clone())
         }
 
-        fn process_route_extensions(self: &mut Self, t: &mut Track) {
+        fn process_route_extensions(self: &mut Self, t: &mut TrackRoute) {
             loop {
                 match self.parser.next() {
                     Ok(XmlEvent::StartElement { name, .. }) => {
@@ -126,23 +134,23 @@ pub mod gpx_parser {
                             return;
                         }
                     }
-                    _ => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on parse route extensions: {e}");
                         return;
                     }
+                    _ => {}
                 }
             }
         }
 
-        fn add_route_extensions(self: &mut Self, t: &mut Track, n: String) {
+        fn add_route_extensions(self: &mut Self, t: &mut TrackRoute, n: String) {
             loop {
                 match self.parser.next() {
                     Ok(XmlEvent::Characters(str)) => {
                         println!("Characters: {n} - {str}");
                         match n.as_str() {
-                            "name" => { t.name = OsString::from(str); }
-                            "comment" => { t.comment = OsString::from(str); }
+                            "name" => { t.name = String::from(str); }
+                            "comment" => { t.comment = String::from(str); }
                             _ => {}
                         }
                     }
@@ -151,11 +159,11 @@ pub mod gpx_parser {
                             return;
                         }
                     }
-                    _ => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on add route extensions: {e}");
                         return;
                     }
+                    _ => {}
                 }
             }
         }
@@ -183,8 +191,8 @@ pub mod gpx_parser {
                         let name = name.local_name;
                         if (tag == name) {
                             match name.as_str() {
-                                "name" => { segment.name = OsString::from(&message); }
-                                "comment" => { segment.comment = OsString::from(&message); }
+                                "name" => { segment.name = String::from(&message); }
+                                "comment" => { segment.comment = String::from(&message); }
                                 _ => {
 
                                 }
@@ -201,12 +209,12 @@ pub mod gpx_parser {
                         eprintln!("Unexpected 'end of document'");
                         return None;
                     }
-                    Ok(XmlEvent::Whitespace(str)) => {}
-                    _ => { println!("Unknown"); }
+                    Ok(XmlEvent::Whitespace(_)) => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on parse segment: {e}");
                         return None;
                     }
+                    _ => { println!("Unknown"); }
                 }
             }
             Some(segment.clone())
@@ -228,7 +236,6 @@ pub mod gpx_parser {
                     _ => {return None; }
                 }
             }
-            let location: LatLon;
             if (lat.is_nan() || lon.is_nan()) {return None;}
             let mut point = TrackPoint::new(lat, lon);
 
@@ -267,11 +274,11 @@ pub mod gpx_parser {
                             return;
                         }
                     }
-                    _ => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on point extensions: {e}");
                         return;
                     }
+                    _ => {}
                 }
             }
         }
@@ -286,11 +293,11 @@ pub mod gpx_parser {
                             return;
                         }
                     }
-                    _ => {}
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        eprintln!("Error on track point extensions: {e}");
                         return;
                     }
+                    _ => {}
                 }
             }
         }
@@ -300,8 +307,8 @@ pub mod gpx_parser {
                 match self.parser.next() {
                     Ok(XmlEvent::Characters(str)) => {
                         match tag {
-                            "name" => { p.name = OsString::from(str); }
-                            "comment" => { p.comment = OsString::from(str); }
+                            "name" => { p.name = String::from(str); }
+                            "comment" => { p.comment = String::from(str); }
                             "ele" => { p.altitude =  str.parse::<f64>().unwrap(); }
                             "alt" => { p.altitude = str.parse::<f64>().unwrap(); }
                             "altitude" => { p.altitude = str.parse::<f64>().unwrap(); }
@@ -322,9 +329,7 @@ pub mod gpx_parser {
                             "type" => {
 
                             }
-                            "weather" => {
-
-                            }
+                            "weather" => { p.weather = Weather((str.parse::<u8>().unwrap()))}
                             "icon" => {
 
                             }
@@ -332,26 +337,33 @@ pub mod gpx_parser {
                                 let a =  NaiveDateTime::parse_from_str(str.as_str(), "%Y-%m-%dT%H:%M:0%SZ");
                                 let b =  NaiveDateTime::parse_from_str(str.as_str(), "%Y-%m-%dT%H:%M:%S%.3fZ");
                                 let c =  NaiveDateTime::parse_from_str(str.as_str(), "%Y-%m-%dT%H:%M:%SZ");
+                                let mut error: bool = true;
                                 match a {
                                     Ok(x) => {
                                         p.time = DateTime::from_naive_utc_and_offset(x, Utc);
+                                        error = false;
                                         continue;
                                     }
-                                    Err(x) => {}
+                                    _ => {}
                                 }
                                 match b {
                                     Ok(x) => {
                                         p.time = DateTime::from_naive_utc_and_offset(x, Utc);
+                                        error = false;
                                         continue;
                                     }
-                                    Err(x) => {}
+                                    _ => {}
                                 }
                                 match c {
                                     Ok(x) => {
                                         p.time = DateTime::from_naive_utc_and_offset(x, Utc);
+                                        error = false;
                                         continue;
                                     }
-                                    Err(x) => {}
+                                    _ => {}
+                                }
+                                if (error == true) {
+                                    eprintln!("Error on parse time format");
                                 }
 
                             }
@@ -366,8 +378,8 @@ pub mod gpx_parser {
                             eprintln!( "Type mismatch {name}");
                         }
                     }
-                    Ok(XmlEvent::Whitespace (str)) => {}
-                    _ => { eprintln!("Someting wrong"); }
+                    Ok(XmlEvent::Whitespace (_)) => {}
+                    _ => { println!("Someting wrong"); }
                 }
             }
         }

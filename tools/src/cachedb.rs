@@ -1,6 +1,6 @@
-pub mod image_cache {
+ pub mod image_cache {
     use std::{fmt, fs};
-    use std::fs::{File, OpenOptions};
+    use std::fs::{File};
     use std::path::{Path, PathBuf};
     use regex::Regex;
     use std::collections::HashMap;
@@ -9,7 +9,6 @@ pub mod image_cache {
     use std::num::ParseIntError;
     use num::ToPrimitive;
     use std::ffi::OsString;
-    use crate::geometry::geometry_core::LatLon;
 
     #[derive(Debug, Clone)]
     struct FileAttr {
@@ -160,7 +159,10 @@ pub mod image_cache {
                 Ok(x) => {
                     self.list.insert(file.clone(), x)
                 },
-                Err(e) => return
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    return
+                }
             };
         }
 
@@ -189,7 +191,7 @@ pub mod image_cache {
         // Clean up cache according to its lifetime.
         pub fn refresh(self: &mut Self) {
             let mut keys: Vec<PathBuf> = vec![];
-            for (path, attr) in &self.list {
+            for (path, _) in &self.list {
                 let attr = self.list.get(path).unwrap();
                 let l = SystemTime::now().duration_since(attr.last_modified).unwrap().as_secs();
                 if (l > self.life) {

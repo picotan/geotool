@@ -3,6 +3,7 @@ mod cachedb;
 mod map;
 mod gpxperser;
 mod gpx;
+mod gpxwriter;
 
 use geometry::geometry_core::LatLon;
 use geometry::geometry_core::TileCoord;
@@ -10,6 +11,7 @@ use geometry::geometry_core::Geometry;
 use cachedb::image_cache::Cache;
 use std::ffi::OsString;
 use gpxperser::gpx_parser::GPXParser;
+use crate::gpxwriter::gpx_writer::GpxWriter;
 
 fn main() {
     let z = 8;
@@ -38,12 +40,15 @@ fn main() {
     };
 
     let track = GPXParser::new(&OsString::from("samples/gpx/Garmin.gpx")).unwrap().open();
+    let mut writer = GpxWriter::new("/tmp/a.gpx").unwrap();
+    writer.write(&mut track.unwrap());
+
     println!("Home tile: {:?}", c);
     println!("Distance <{:?}>m", lb.distance(&la));
     println!("Lat Lon: {:?}", c.latlon_from_tile());
     println!("Distance {}", Geometry{ location:lb, alt:100f64}.distance(&Geometry{ location:la,alt:0f64}));
     println!("Path for {:?}", cache.get_full_path(&OsString::from("12345678abcde0980123456789ABCDEF02")));
-    println!("{:?}", track);
+//    println!("{:?}", track);
 }
 
 fn max_tiles(z: u32) -> i32 {

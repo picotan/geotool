@@ -1,9 +1,9 @@
 #![recursion_limit = "256"]
 
-use std::fmt;
 
-pub mod Gpx {
+pub mod gpx {
     use std::fmt;
+    use std::fmt::Formatter;
     use std::ffi::OsString;
     use crate::geometry::geometry_core::{Geometry, LatLon, Area};
     use chrono::prelude::{DateTime, Utc};
@@ -12,7 +12,7 @@ pub mod Gpx {
     use bitfield::{bitfield_bitrange, bitfield_debug, bitfield_fields};
 
     #[derive(Clone,Eq, PartialEq)]
-    pub struct Weather(u8);
+    pub struct Weather(pub u8);
     bitfield_bitrange! {struct Weather(u8)}
     impl Weather {
         bitfield_fields! {
@@ -21,21 +21,21 @@ pub mod Gpx {
                 strong, _: 7, 4;
         }
 
-        const NONE: u8 = 0;
+        pub const NONE: u8 = 0;
 
-        const SUNNY: u8 = 1;
-        const CLOUDY: u8 = 2;
-        const RAIN: u8 = 3;
-        const SNOW: u8 = 4;
-        const HAIL: u8 = 5;
-        const SLEET: u8 = 6;
-        const FOG: u8 = 7;
+        pub const SUNNY: u8 = 1;
+        pub const CLOUDY: u8 = 2;
+        pub const RAIN: u8 = 3;
+        pub const SNOW: u8 = 4;
+        pub const HAIL: u8 = 5;
+        pub const SLEET: u8 = 6;
+        pub const FOG: u8 = 7;
 
-        const LITE: u8 = 1;
-        const MEDIUM: u8 = 0;
-        const HEAVY: u8 = 2;
-        const FEEBLE: u8 = 3;
-        const STORMY: u8 = 4;
+        pub const LITE: u8 = 1;
+        pub const MEDIUM: u8 = 0;
+        pub const HEAVY: u8 = 2;
+        pub const FEEBLE: u8 = 3;
+        pub const STORMY: u8 = 4;
 
         pub fn set_strong(&mut self, strong: u8) {
             self.0 = strong;
@@ -52,8 +52,8 @@ pub mod Gpx {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct Wind {
-        direction: f64,
-        strong: u64
+        pub direction: f64,
+        pub strong: u64
     }
 
     // impl fmt::Debug for Wind {
@@ -64,8 +64,8 @@ pub mod Gpx {
     //         Ok(())
     //     }
     // }
-    #[derive(Clone, Eq, PartialEq)]
-    enum PointType {
+    #[derive(Clone, Eq, PartialEq, Copy)]
+    pub enum PointType {
         None = 0,
         Hut = 1,
         Cliff = 2,
@@ -86,7 +86,7 @@ pub mod Gpx {
 
 
     impl PointType {
-        fn as_str(&self) -> &str {
+        pub fn as_str(&self) -> &str {
             match self {
                 PointType::None => {"None"},
                 PointType::Hut => {"Hut"},
@@ -127,8 +127,8 @@ pub mod Gpx {
         pub vertical_speed: f64,
         pub weather: Weather,
         pub point_type: Vec::<PointType>,
-        pub comment: OsString,
-        pub name: OsString,
+        pub comment: String,
+        pub name: String,
     }
 
     impl TrackPoint {
@@ -151,16 +151,16 @@ pub mod Gpx {
                 vertical_speed: f64::NAN,
                 weather: Weather(Weather::NONE),
                 point_type: vec![PointType::None],
-                comment: OsString::new(),
-                name: OsString::new(),
+                comment: String::new(),
+                name: String::new(),
             }
         }
 
-        pub fn set_name(self: &mut Self, name: OsString) {
+        pub fn set_name(self: &mut Self, name: String) {
             self.name = name;
         }
 
-        pub fn set_comment(self: &mut Self, comment: OsString) {
+        pub fn set_comment(self: &mut Self, comment: String) {
             self.comment = comment;
         }
 
@@ -199,9 +199,29 @@ pub mod Gpx {
             }
             return list.clone();
         }
+
+        pub fn has_extension(&self) -> bool {
+            if (!self.heading.is_nan()) {return true}
+            if (!self.pressure.is_nan()) {return true}
+            if (!self.temperature.is_nan()) {return true}
+            if (!self.heart_rate.is_nan()) {return true}
+            if ((!self.wind.direction.is_nan()) && (self.wind.strong == u64::MIN)) {return true}
+            if (!self.luminance.is_nan()) {return true}
+            if (!self.radiation.is_nan()) {return true}
+            if (!self.distance.is_nan()) {return true}
+            if (!self.energy.is_nan()) {return true}
+            if (!self.cadence.is_nan()) {return true}
+            if (!self.pace.is_nan()) {return true}
+            if (!self.vertical_speed.is_nan()) {return true}
+            if (self.weather != Weather(Weather::NONE)) {return true}
+            if (self.point_type.len() != 0) {return true}
+            if (!self.comment.is_empty()) {return true}
+            if (!self.name.is_empty()) {return true}
+            return false;
+        }
     }
 
-    impl fmt::Display for crate::gpx::Gpx::TrackPoint {
+    impl fmt::Display for crate::gpx::gpx::TrackPoint {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(location: {:?}", self.location).unwrap();
             if (!self.altitude.is_nan()) {write!(f, "altitude: {}m", self.altitude).unwrap();}
@@ -220,15 +240,17 @@ pub mod Gpx {
         }
     }
 
-    impl fmt::Debug for crate::gpx::Gpx::TrackPoint {
+    impl fmt::Debug for crate::gpx::gpx::TrackPoint {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            Ok(())
+            f.debug_struct("TrackPoint")
+                .field("altitude", &self.altitude)
+                .finish()
         }
     }
 
     #[derive(Clone, Debug)]
     pub struct PointAttr {
-        point: TrackPoint,
+        pub point: TrackPoint,
         geometry: Geometry,
         distance: f64,
         direction: f64,
@@ -236,9 +258,9 @@ pub mod Gpx {
 
     #[derive(Clone, Debug)]
     pub struct TrackSegment {
-        points: Vec<PointAttr>,
-        pub name: OsString,
-        pub comment: OsString,
+        pub points: Vec<PointAttr>,
+        pub name: String,
+        pub comment: String,
         highest: f64,
         lowest: f64,
         distance: f64,
@@ -249,8 +271,8 @@ pub mod Gpx {
         pub fn new() -> TrackSegment {
             Self {
                 points: Vec::new(),
-                name: OsString::new(),
-                comment: OsString::new(),
+                name: String::new(),
+                comment: String::new(),
                 highest: f64::NAN,
                 lowest: f64::NAN,
                 distance: 0f64,
@@ -433,8 +455,7 @@ pub mod Gpx {
         }
 
         fn update_minmax(self: &mut Self) {
-            let mut lowest = f64::MAX;
-            let mut hightest = f64::MIN;
+
             for p in &self.points {
                 if (p.point.altitude < self.lowest) {self.lowest = p.point.altitude;}
                 if (p.point.altitude > self.highest) {self.highest = p.point.altitude;}
@@ -442,7 +463,7 @@ pub mod Gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::Gpx::TrackSegment {
+    impl fmt::Display for crate::gpx::gpx::TrackSegment {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
             if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
@@ -457,20 +478,20 @@ pub mod Gpx {
     }
 
     #[derive(Clone)]
-    pub struct Track {
-        segments: Vec<TrackSegment>,
-        pub name: OsString,
-        pub comment: OsString,
+    pub struct TrackRoute {
+        pub segments: Vec<TrackSegment>,
+        pub name: String,
+        pub comment: String,
         highest: f64,
         lowest: f64,
         distance: f64,
     }
 
-    impl Track {
-        pub fn new() -> Track {
+    impl TrackRoute {
+        pub fn new() -> TrackRoute {
             Self {segments: Vec::new(),
-                name: OsString::new(),
-                comment: OsString::new(),
+                name: String::new(),
+                comment: String::new(),
                 highest: 0f64,
                 lowest: 0f64,
                 distance: 0f64,
@@ -490,7 +511,7 @@ pub mod Gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::Gpx::Track {
+    impl fmt::Display for crate::gpx::gpx::TrackRoute {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
             if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
@@ -500,12 +521,59 @@ pub mod Gpx {
             }
             if (!self.highest.is_nan()) {write!(f, "time: {}", self.highest).unwrap();}
             if (!self.lowest.is_nan()) {write!(f, "time: {}", self.lowest).unwrap();}
+            if (!self.distance.is_nan()) {write!(f, "time: {}", self.distance).unwrap();}
             writeln!(f, ")")
         }
     }
-    impl fmt::Debug for crate::gpx::Gpx::Track {
+    impl fmt::Debug for crate::gpx::gpx::TrackRoute {
         fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-            Ok(())
+            f.debug_struct("TrackRoute")
+                .field("name", &self.name)
+                .field("comment", &self.comment)
+                .field("highest", &self.highest)
+                .field("lowest", &self.lowest)
+                .field("distance", &self.distance)
+                .finish()
         }
     }
+
+    #[derive(Clone)]
+    pub struct Track {
+        pub routes: Vec<TrackRoute>,
+        pub name: String,
+        pub comment: String,
+    }
+
+    impl Track {
+        pub fn new() -> Self {
+            Self {
+                routes: Vec::new(),
+                name: String::new(),
+                comment: String::new(),
+            }
+        }
+    }
+
+    impl fmt::Debug for crate::gpx::gpx::Track {
+        fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.debug_struct("Track")
+                .field("name", &self.name)
+                .field("comment", &self.comment)
+                .finish()
+        }
+    }
+
+    impl fmt::Display for crate::gpx::gpx::Track {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "(").unwrap();
+            if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
+            if (self.comment != "") {write!(f, "comment: {:?}", self.comment).unwrap();}
+            for i in &self.routes {
+                write!(f, "{:?}", i).unwrap();
+            }
+            writeln!(f, ")")
+        }
+    }
+
+
 }
