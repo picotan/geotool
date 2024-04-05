@@ -1,5 +1,12 @@
 [workspace]
 members = [
-	"tools",
-	"libs"
+	"libs/cache",
+	"libs/geo",
+	"app"
 ]
+
+default-members = ["app"]
+
+[workspace.dependencies]
+cache = { path = "libs/cache" }
+geo = { path = "libs/geo" }

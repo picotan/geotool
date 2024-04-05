@@ -8,20 +8,20 @@ pub mod gpx_parser {
     use xml::attribute::OwnedAttribute;
     use xml::EventReader;
     use xml::reader::XmlEvent;
-    use crate::gpx::gpx::*;
     use chrono::prelude::Utc;
+    use crate::gpx::gpx::{*};
 
-    pub struct GPXParser {
+    pub struct Parser {
         file: OsString,
         parser: EventReader<BufReader<File>>,
     }
 
-    impl GPXParser {
+    impl Parser {
 
-        pub fn new(name: &OsString) -> Option<GPXParser> {
+        pub fn new(name: &OsString) -> Option<Parser> {
             let file = File::open(name).unwrap();
             let file = BufReader::new(file); // Buffering is important for performance
-            Some(GPXParser{file: name.clone(), parser: EventReader::new(file)})
+            Some(Parser {file: name.clone(), parser: EventReader::new(file)})
         }
         pub fn open(self: &mut Self) -> Option<Track> {
             let mut route = self.process_gpx();

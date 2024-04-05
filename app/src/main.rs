@@ -1,20 +1,14 @@
-mod geometry;
-mod cachedb;
-mod map;
-mod gpxperser;
-mod gpx;
-mod gpxwriter;
-
-use geometry::geometry_core::LatLon;
-use geometry::geometry_core::TileCoord;
-use geometry::geometry_core::Geometry;
-use cachedb::image_cache::Cache;
+use geo::geometry_core::LatLon;
+use geo::geometry_core::TileCoord;
+use geo::geometry_core::Geometry;
+use cache::image_cache::Cache;
 use std::ffi::OsString;
-use gpxperser::gpx_parser::GPXParser;
-use crate::gpxwriter::gpx_writer::GpxWriter;
+use geo::gpx_writer::gpx_writer::Writer;
+use geo::gpx_parser::gpx_parser::Parser;
 
 fn main() {
     let z = 8;
+    let a = LatLon::new(0f64, 0f64);
     let l1 = LatLon::new(35.543296, 139.641466);
     // L1 - L2 about 1km
     let l2 = LatLon::new(35.535823, 139.634943);
@@ -39,8 +33,8 @@ fn main() {
         },
     };
 
-    let track = GPXParser::new(&OsString::from("samples/gpx/Garmin.gpx")).unwrap().open();
-    let mut writer = GpxWriter::new("/tmp/a.gpx").unwrap();
+    let track = Parser::new(&OsString::from("samples/gpx/Garmin.gpx")).unwrap().open();
+    let mut writer = Writer::new("/tmp/a.gpx").unwrap();
     writer.write(&mut track.unwrap());
 
     println!("Home tile: {:?}", c);

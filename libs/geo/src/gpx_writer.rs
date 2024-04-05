@@ -9,11 +9,11 @@ pub mod gpx_writer {
     use num::complex::ComplexFloat;
     use crate::gpx::gpx;
 
-    pub struct GpxWriter {
+    pub struct Writer {
         file: File,
     }
 
-    impl GpxWriter {
+    impl Writer {
         pub fn new(name: &str) -> io::Result<Self> {
             match File::create(name) {
                 Ok(x) => {Ok(Self { file: x })},

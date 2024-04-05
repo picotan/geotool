@@ -1,11 +1,9 @@
-#![recursion_limit = "256"]
-
 
 pub mod gpx {
     use std::fmt;
     use std::fmt::Formatter;
     use std::ffi::OsString;
-    use crate::geometry::geometry_core::{Geometry, LatLon, Area};
+    use crate::geometry_core::{Geometry, LatLon, Area};
     use chrono::prelude::{DateTime, Utc};
     use num::complex::ComplexFloat;
     use bitfield::BitRangeMut;
@@ -221,7 +219,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::gpx::TrackPoint {
+    impl fmt::Display for TrackPoint {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(location: {:?}", self.location).unwrap();
             if (!self.altitude.is_nan()) {write!(f, "altitude: {}m", self.altitude).unwrap();}
@@ -240,7 +238,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Debug for crate::gpx::gpx::TrackPoint {
+    impl fmt::Debug for TrackPoint {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.debug_struct("TrackPoint")
                 .field("altitude", &self.altitude)
@@ -463,7 +461,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::gpx::TrackSegment {
+    impl fmt::Display for TrackSegment {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
             if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
@@ -511,7 +509,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::gpx::TrackRoute {
+    impl fmt::Display for TrackRoute {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
             if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
@@ -525,7 +523,7 @@ pub mod gpx {
             writeln!(f, ")")
         }
     }
-    impl fmt::Debug for crate::gpx::gpx::TrackRoute {
+    impl fmt::Debug for TrackRoute {
         fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.debug_struct("TrackRoute")
                 .field("name", &self.name)
@@ -554,7 +552,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Debug for crate::gpx::gpx::Track {
+    impl fmt::Debug for Track {
         fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.debug_struct("Track")
                 .field("name", &self.name)
@@ -563,7 +561,7 @@ pub mod gpx {
         }
     }
 
-    impl fmt::Display for crate::gpx::gpx::Track {
+    impl fmt::Display for Track {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
             if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}

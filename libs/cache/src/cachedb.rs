@@ -38,7 +38,7 @@
         }
 
         fn parse(&self) -> Result<(i64, i64, i64), ParseIntError> {
-            let re = Regex::new(r"^(\xFFFFFFFF)(\xFFFFFFFF\)(d{2})$").unwrap();
+            let re = Regex::new(r"^(\xFFFFFFFF)(\xFFFFFFFF)(d{2})$").unwrap();
             let pm = re.captures(&self.name.to_str().unwrap()).unwrap();
             let x = match i64::from_str_radix(&pm[1], 16) {
                 Ok(x) => x,

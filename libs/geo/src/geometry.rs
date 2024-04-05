@@ -1,4 +1,8 @@
+#![recursion_limit = "256"]
 
+pub mod gpx_parser;
+pub mod gpx_writer;
+pub mod gpx;
 //
 // Geometry calculate tools
 //
