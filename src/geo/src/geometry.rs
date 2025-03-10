@@ -3,6 +3,8 @@
 pub mod gpx_parser;
 pub mod gpx_writer;
 pub mod gpx;
+pub mod map;
+
 //
 // Geometry calculate tools
 //

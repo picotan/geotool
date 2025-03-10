@@ -1,4 +1,3 @@
-#[warn(private_interfaces)]
  pub mod image_cache {
     use std::{fmt, fs};
     use std::fs::{File};
@@ -23,7 +22,7 @@
             let name = path.file_name().unwrap().to_os_string();
             let path = path.clone().into_os_string();
             if FileAttr::is_feasible(&name) {
-                let f = File::open(path)?;
+                let mut f = File::open(path)?;
                 let metadata = f.metadata()?;
                 Ok(FileAttr{name: name.clone(), last_modified: metadata.modified()?, size: metadata.len()})
             } else {
@@ -81,8 +80,7 @@
     }
 
     impl Cache {
-        #[no_mangle]
-        pub extern fn new(p: &String, life: u64) -> Result<Cache,Error> {
+        pub fn new(p: &String, life: u64) -> Result<Cache,Error> {
             let mut list: HashMap<OsString, FileAttr> = HashMap::new();
             let mut timetable: Vec<(SystemTime, OsString)> = Vec::new();
             let path = Path::new(p);
@@ -96,15 +94,15 @@
         }
 
         fn quick_find_sub(self: &Self, t: &SystemTime, s: usize, e:usize) -> Option<usize> {
-            if s == e {
-                if self.timetable[s].0 == *t {
+            if (s == e) {
+                if (self.timetable[s].0 == *t) {
                     return Some(s)
                 }
                 return None
             }
             let st = self.timetable[s].0;
             let et = self.timetable[e].0;
-            if (t > &st) || (t < &et) {return None}
+            if ((t > &st) || (t < &et)) {return None}
             let m = (s + e) / 2;
             if &self.timetable[m].0 < t {
                 return self.quick_find_sub(t, m, e)
@@ -123,14 +121,14 @@
                             list: &mut HashMap<OsString, FileAttr>,
                             timetable: &mut Vec<(SystemTime, OsString)>,
                             s: usize, e:usize) -> bool {
-            if s == e {
+            if (s == e) {
                 timetable.insert(s.to_usize().unwrap(), t.clone());
                 println!("{:?}", timetable);
                 return true
             }
             let st = timetable[s].0;
             let et = timetable[e].0;
-            if (t.0 > st) || (t.0 < et) {
+            if ((t.0 > st) || (t.0 < et)) {
                 return false
             }
             let m = (s + e) / 2;
@@ -168,15 +166,15 @@
                 }
             };
         }
-        #[no_mangle]
-        pub extern fn is_exist(self: &Self, path: &String) -> bool {
+
+        pub fn is_exist(self: &Self, path: &String) -> bool {
             let p = Path::new(path);
             let p = p.to_path_buf().into_os_string();
             !self.list.get(&p).is_none()
         }
+
         // Get File attribute corresponding to path from cache
-        #[no_mangle]
-        pub extern fn get_full_path(self: &Self, name: &OsString) -> Option<OsString>{
+        pub fn get_full_path(self: &Self, name: &OsString) -> Option<OsString>{
             match self.list.get(name) {
                 Some(f) => {
                     let mut p = self.path.clone();
@@ -186,18 +184,18 @@
                 None => None,
             }
         }
-        #[no_mangle]
-        pub extern fn get_attr(self: &Self, path: &OsString) -> Option<&FileAttr> {
+
+        pub fn get_attr(self: &Self, path: &OsString) -> Option<&FileAttr> {
             self.list.get(path)
         }
+
         // Clean up cache according to its lifetime.
-        #[no_mangle]
-        pub extern fn refresh(self: &mut Self) {
+        pub fn refresh(self: &mut Self) {
             let mut keys: Vec<PathBuf> = vec![];
             for (path, _) in &self.list {
                 let attr = self.list.get(path).unwrap();
                 let l = SystemTime::now().duration_since(attr.last_modified).unwrap().as_secs();
-                if l > self.life {
+                if (l > self.life) {
                     // This entry is expired, remove from cache
                     keys.push(path.clone().into());
                 }
@@ -206,9 +204,9 @@
                 self.list.remove(&p.into_os_string());
             }
         }
+
         // Change cache directory, drop all of existing cache file information and recreate meta information.
-        #[no_mangle]
-        pub extern fn set_path(self: &mut Self,
+        pub fn set_path(self: &mut Self,
                         path: &String,
                         create: bool) -> Result<bool, std::io::Error> {
             match Self::set_path_sub(path, create, &mut self.list, &mut self.timetable) {
@@ -219,13 +217,13 @@
                 Err(e) => Err(e),
             }
         }
-        #[no_mangle]
-        pub extern fn set_path_sub(path: &String,
+
+        pub fn set_path_sub(path: &String,
                             create: bool,
                             list: &mut HashMap<OsString, FileAttr>,
                             timetable: &mut Vec<(SystemTime, OsString)>) -> Result<bool, Error> {
             let p = Path::new(path);
-            let p = p.to_path_buf();
+            let mut p = p.to_path_buf();
             // Directory Check
             if !p.exists() {
                 if create {

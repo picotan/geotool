@@ -1,0 +1,16 @@
+[package]
+name = "geotest"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+	"src/*",
+]
+
+[dependencies.geocore]
+geocore = { path = "../libs/geocore" }
+
+[dependencies.cachedb]
+cachedb = { path = "../libs/cache" }
+

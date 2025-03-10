@@ -1,9 +1,9 @@
-
+#[warn(unused_imports)]
 pub mod gpx {
     use std::fmt;
     use std::fmt::Formatter;
     use std::ffi::OsString;
-    use crate::geometry_core::{Geometry, LatLon, Area};
+    use crate::geometry::geometry_core::{Geometry, LatLon, Area};
     use chrono::prelude::{DateTime, Utc};
     use num::complex::ComplexFloat;
     use bitfield::BitRangeMut;
@@ -84,7 +84,8 @@ pub mod gpx {
 
 
     impl PointType {
-        pub fn as_str(&self) -> &str {
+        #[unsafe(no_mangle)]
+        pub extern fn as_str(&self) -> &str {
             match self {
                 PointType::None => {"None"},
                 PointType::Hut => {"Hut"},
@@ -154,19 +155,28 @@ pub mod gpx {
             }
         }
 
-        pub fn set_name(self: &mut Self, name: String) {
+        #[unsafe(no_mangle)]
+        pub extern fn TrackPoint(lat: f64, lon: f64) -> TrackPoint {
+            Self::TrackPoint(lat, lon)
+        }
+        
+        #[unsafe(no_mangle)]
+        pub extern fn set_name(self: &mut Self, name: String) {
             self.name = name;
         }
 
-        pub fn set_comment(self: &mut Self, comment: String) {
+        #[unsafe(no_mangle)]
+        pub extern fn set_comment(self: &mut Self, comment: String) {
             self.comment = comment;
         }
 
-        pub fn weather(str: u8, state: u8) -> Weather {
+        #[unsafe(no_mangle)]
+        pub extern fn weather(str: u8, state: u8) -> Weather {
             return Weather((state << 4) | str);
         }
 
-        pub fn weather_str(&self) -> OsString {
+        #[unsafe(no_mangle)]
+        pub extern fn weather_str(&self) -> OsString {
             let strong = match self.weather.strong() {
                 Weather::LITE => {"Lite"}
                 Weather::MEDIUM => {""}
@@ -190,7 +200,8 @@ pub mod gpx {
             return OsString::from(format!("{strong} {state}"));
         }
 
-        pub fn type_str(&self) -> Vec<OsString> {
+        #[unsafe(no_mangle)]
+        pub extern fn type_str(&self) -> Vec<OsString> {
             let mut list: Vec<OsString> = vec![];
             for pt in &self.point_type {
                 list.push(OsString::from(pt.as_str()));
@@ -198,23 +209,24 @@ pub mod gpx {
             return list.clone();
         }
 
-        pub fn has_extension(&self) -> bool {
-            if (!self.heading.is_nan()) {return true}
-            if (!self.pressure.is_nan()) {return true}
-            if (!self.temperature.is_nan()) {return true}
-            if (!self.heart_rate.is_nan()) {return true}
-            if ((!self.wind.direction.is_nan()) && (self.wind.strong == u64::MIN)) {return true}
-            if (!self.luminance.is_nan()) {return true}
-            if (!self.radiation.is_nan()) {return true}
-            if (!self.distance.is_nan()) {return true}
-            if (!self.energy.is_nan()) {return true}
-            if (!self.cadence.is_nan()) {return true}
-            if (!self.pace.is_nan()) {return true}
-            if (!self.vertical_speed.is_nan()) {return true}
-            if (self.weather != Weather(Weather::NONE)) {return true}
-            if (self.point_type.len() != 0) {return true}
-            if (!self.comment.is_empty()) {return true}
-            if (!self.name.is_empty()) {return true}
+        #[unsafe(no_mangle)]
+        pub extern fn has_extension(&self) -> bool {
+            if !self.heading.is_nan() {return true}
+            if !self.pressure.is_nan() {return true}
+            if !self.temperature.is_nan() {return true}
+            if !self.heart_rate.is_nan() {return true}
+            if (!self.wind.direction.is_nan()) && (self.wind.strong == u64::MIN) {return true}
+            if !self.luminance.is_nan() {return true}
+            if !self.radiation.is_nan() {return true}
+            if !self.distance.is_nan() {return true}
+            if !self.energy.is_nan() {return true}
+            if !self.cadence.is_nan() {return true}
+            if !self.pace.is_nan() {return true}
+            if !self.vertical_speed.is_nan(){return true}
+            if self.weather != Weather(Weather::NONE) {return true}
+            if self.point_type.len() != 0 {return true}
+            if !self.comment.is_empty() {return true}
+            if !self.name.is_empty() {return true}
             return false;
         }
     }
@@ -222,18 +234,18 @@ pub mod gpx {
     impl fmt::Display for TrackPoint {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(location: {:?}", self.location).unwrap();
-            if (!self.altitude.is_nan()) {write!(f, "altitude: {}m", self.altitude).unwrap();}
-            if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
-            if (self.comment != "") {write!(f, "comment: {:?}", self.comment).unwrap();}
-            if (!self.time.eq(&DateTime::<Utc>::MIN_UTC)) {write!(f, "time: {:?}", self.time).unwrap();}
-            if (!self.heading.is_nan()) {write!(f, "heading: {}", self.heading).unwrap();}
-            if (!self.pressure.is_nan()) {write!(f, "pressure: {}hp", self.pressure).unwrap();}
-            if (!self.temperature.is_nan()) {write!(f, "temperature: {}", self.temperature).unwrap();}
-            if (!self.heart_rate.is_nan()) {write!(f, "heart nrate: {}bpm", self.heart_rate).unwrap();}
-            if (!self.luminance.is_nan()) {write!(f, "luminance: {}lx", self.luminance).unwrap();}
-            if (!self.radiation.is_nan()) {write!(f, "radiation: {}", self.radiation).unwrap();}
-            if (self.weather != Weather(Weather::NONE)) {write!(f, "time: {:?}", &self.weather_str()).unwrap();}
-            if (self.point_type.len() != 0) {write!(f, "time: {:?}", &self.type_str()).unwrap();}
+            if !self.altitude.is_nan() {write!(f, "altitude: {}m", self.altitude).unwrap();}
+            if self.name != "" {write!(f, "name: {:?}", self.name).unwrap();}
+            if self.comment != "" {write!(f, "comment: {:?}", self.comment).unwrap();}
+            if !self.time.eq(&DateTime::<Utc>::MIN_UTC) {write!(f, "time: {:?}", self.time).unwrap();}
+            if !self.heading.is_nan() {write!(f, "heading: {}", self.heading).unwrap();}
+            if !self.pressure.is_nan() {write!(f, "pressure: {}hp", self.pressure).unwrap();}
+            if !self.temperature.is_nan() {write!(f, "temperature: {}", self.temperature).unwrap();}
+            if !self.heart_rate.is_nan() {write!(f, "heart nrate: {}bpm", self.heart_rate).unwrap();}
+            if !self.luminance.is_nan() {write!(f, "luminance: {}lx", self.luminance).unwrap();}
+            if !self.radiation.is_nan() {write!(f, "radiation: {}", self.radiation).unwrap();}
+            if self.weather != Weather(Weather::NONE) {write!(f, "time: {:?}", &self.weather_str()).unwrap();}
+            if self.point_type.len() != 0 {write!(f, "time: {:?}", &self.type_str()).unwrap();}
             writeln!(f, ")")
         }
     }
@@ -259,9 +271,9 @@ pub mod gpx {
         pub points: Vec<PointAttr>,
         pub name: String,
         pub comment: String,
-        highest: f64,
-        lowest: f64,
-        distance: f64,
+        pub highest: f64,
+        pub lowest: f64,
+        pub distance: f64,
         area: Area,
     }
 
@@ -278,11 +290,17 @@ pub mod gpx {
             }
         }
 
-        pub fn add_point(self: &mut Self, p: TrackPoint) {
-            if (self.highest < p.altitude) {
+        #[unsafe(no_mangle)]
+        pub extern fn TrackSegment() {
+            TrackSegment::new();
+        }
+
+        #[unsafe(no_mangle)]
+        pub extern fn add_point(self: &mut Self, p: TrackPoint) {
+            if self.highest < p.altitude {
                 self.highest = p.altitude
             }
-            if (self.lowest > p.altitude) {
+            if self.lowest > p.altitude {
                 self.lowest = p.altitude
             }
             let g = Geometry{location: p.location.clone(), alt: p.altitude};
@@ -297,9 +315,10 @@ pub mod gpx {
             self.points.push(point);
         }
 
-        pub fn append(self: &mut Self, seg: &mut TrackSegment) {
-            if (self.lowest > seg.lowest) {self.lowest = seg.lowest}
-            if (self.highest < seg.highest) {self.highest = seg.highest}
+        #[unsafe(no_mangle)]
+        pub extern fn append(self: &mut Self, seg: &mut TrackSegment) {
+            if self.lowest > seg.lowest {self.lowest = seg.lowest}
+            if self.highest < seg.highest {self.highest = seg.highest}
             self.points.append(&mut seg.points);
             self.area.add(&seg.area);
         }
@@ -317,17 +336,18 @@ pub mod gpx {
             }
         }
 
-        pub fn cut_in(self: &mut Self, i: usize, segment: &mut TrackSegment) {
-            if (self.highest < segment.highest) {
+        #[unsafe(no_mangle)]
+        pub extern fn cut_in(self: &mut Self, i: usize, segment: &mut TrackSegment) {
+            if self.highest < segment.highest {
                 self.highest = segment.highest
             }
-            if (self.lowest > segment.lowest) {
+            if self.lowest > segment.lowest {
                 self.lowest = self.lowest
             }
-            if (self.points.len() == 0) {
+            if self.points.len() == 0 {
                 self.append(segment);
                 self.distance = segment.distance
-            } else if (i == 0) {
+            } else if i == 0 {
                 let l = self.points.len();
                 self.points[l - 1].distance
                     = self.points[l - 1].geometry.distance(&segment.points[0].geometry);
@@ -375,7 +395,7 @@ pub mod gpx {
                 let prev_g = self.points[i - 1].geometry.clone();
                 let prev_l = self.points[i - 1].point.location.clone();
 
-                let mut p = &mut self.points[usize::from(i)];
+                let p = &mut self.points[usize::from(i)];
                 if !f64::is_nan(p.point.altitude) && f64::is_nan(self.highest) {
                     self.highest = p.point.altitude
                 } else if !f64::is_nan(p.point.altitude) && (self.highest <  p.point.altitude) {
@@ -388,7 +408,7 @@ pub mod gpx {
                 }
                 if !f64::is_nan(p.distance) {
                     self.distance += p.distance
-                } else if (i != 0) {
+                } else if i != 0 {
                     p.distance = p.geometry.distance(&prev_g);
                     self.distance += p.distance;
 
@@ -398,26 +418,27 @@ pub mod gpx {
             }
         }
 
-        pub fn insert_at(self: &mut Self, p: TrackPoint, i: usize) {
-            if (self.points.len() < i) {
+        #[unsafe(no_mangle)]
+        pub extern fn insert_at(self: &mut Self, p: TrackPoint, i: usize) {
+            if self.points.len() < i {
                 panic!("{i} is bigger than currently segment has")
             }
-            if (self.highest < p.altitude) {
+            if self.highest < p.altitude {
                 self.highest = p.altitude
             }
-            if (self.lowest > p.altitude) {
+            if self.lowest > p.altitude {
                 self.lowest = p.altitude
             }
             let mut pt = PointAttr{point: p.clone(), distance: 0f64, geometry: Geometry{location: p.location.clone(), alt: p.altitude.clone()}, direction:0f64};
-            if (self.points.len() != 0) {
+            if self.points.len() != 0 {
                 // Recalculate direction and distance
-                if (i != (self.points.len() - 1)) {
+                if i != (self.points.len() - 1) {
                     // Not last
-                    let mut n = &mut self.points[i + 1];
+                    let n = &mut self.points[i + 1];
                     n.direction = n.geometry.location.distance(&p.location);
                     n.distance = n.geometry.distance(&pt.geometry);
                 }
-                if (i != 0) {
+                if i != 0 {
                     let n = &self.points[i - 1];
                     pt.direction = n.geometry.location.distance(&p.location);
                     pt.distance = n.geometry.distance(&pt.geometry);
@@ -428,17 +449,18 @@ pub mod gpx {
             self.points.insert(i, pt);
         }
 
-        pub fn remove_at(self: &mut Self, p: TrackPoint, i: usize) {
-            if (self.points.len() < i) {
+        #[unsafe(no_mangle)]
+        pub extern fn remove_at(self: &mut Self, p: TrackPoint, i: usize) {
+            if self.points.len() < i {
                 panic!("{i} is bigger than currently segment has")
             }
 
             // Distance re-calculation
-            if (self.points.len() > 1) {
+            if self.points.len() > 1 {
                 self.distance -= self.points[i + 1].distance;
-                if (i == 0) {
+                if i == 0 {
                     self.points[i + 1].distance = 0f64;
-                } else if (self.points.len() > 2) && (i != (self.points.len() - 1)) {
+                } else if self.points.len() > 2 && (i != (self.points.len() - 1)) {
                     self.points[i + 1].distance = self.points[i + 1].geometry.distance(&self.points[i - 1].geometry);
                 }
             }
@@ -449,14 +471,14 @@ pub mod gpx {
                 // Recalc
                 self.update_minmax();
             }
-            if (p.location.lat > self.area.north_west.lat) {}
+            if p.location.lat > self.area.north_west.lat {}
         }
 
         fn update_minmax(self: &mut Self) {
 
             for p in &self.points {
-                if (p.point.altitude < self.lowest) {self.lowest = p.point.altitude;}
-                if (p.point.altitude > self.highest) {self.highest = p.point.altitude;}
+                if p.point.altitude < self.lowest {self.lowest = p.point.altitude;}
+                if p.point.altitude > self.highest {self.highest = p.point.altitude;}
             }
         }
     }
@@ -464,114 +486,14 @@ pub mod gpx {
     impl fmt::Display for TrackSegment {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "(").unwrap();
-            if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
-            if (self.comment != "") {write!(f, "comment: {:?}", self.comment).unwrap();}
+            if self.name != "" {write!(f, "name: {:?}", self.name).unwrap();}
+            if self.comment != "" {write!(f, "comment: {:?}", self.comment).unwrap();}
             for i in &self.points {
                 write!(f, "{:?}", i).unwrap();
             }
-            if (!self.highest.is_nan()) {write!(f, "time: {}", self.highest).unwrap();}
-            if (!self.lowest.is_nan()) {write!(f, "time: {}", self.lowest).unwrap();}
+            if !self.highest.is_nan() {write!(f, "time: {}", self.highest).unwrap();}
+            if !self.lowest.is_nan() {write!(f, "time: {}", self.lowest).unwrap();}
             writeln!(f, ")")
         }
     }
-
-    #[derive(Clone)]
-    pub struct TrackRoute {
-        pub segments: Vec<TrackSegment>,
-        pub name: String,
-        pub comment: String,
-        highest: f64,
-        lowest: f64,
-        distance: f64,
-    }
-
-    impl TrackRoute {
-        pub fn new() -> TrackRoute {
-            Self {segments: Vec::new(),
-                name: String::new(),
-                comment: String::new(),
-                highest: 0f64,
-                lowest: 0f64,
-                distance: 0f64,
-            }
-        }
-
-        pub fn add_segment(self: &mut Self, segment: &TrackSegment) {
-            if (segment.lowest < self.lowest) {
-                self.lowest = segment.lowest;
-            }
-
-            if (segment.highest < self.highest) {
-                self.highest = segment.highest;
-            }
-            self.segments.push(segment.clone());
-            self.distance += segment.distance;
-        }
-    }
-
-    impl fmt::Display for TrackRoute {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "(").unwrap();
-            if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
-            if (self.comment != "") {write!(f, "comment: {:?}", self.comment).unwrap();}
-            for i in &self.segments {
-                write!(f, "{:?}", i).unwrap();
-            }
-            if (!self.highest.is_nan()) {write!(f, "time: {}", self.highest).unwrap();}
-            if (!self.lowest.is_nan()) {write!(f, "time: {}", self.lowest).unwrap();}
-            if (!self.distance.is_nan()) {write!(f, "time: {}", self.distance).unwrap();}
-            writeln!(f, ")")
-        }
-    }
-    impl fmt::Debug for TrackRoute {
-        fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-            f.debug_struct("TrackRoute")
-                .field("name", &self.name)
-                .field("comment", &self.comment)
-                .field("highest", &self.highest)
-                .field("lowest", &self.lowest)
-                .field("distance", &self.distance)
-                .finish()
-        }
-    }
-
-    #[derive(Clone)]
-    pub struct Track {
-        pub routes: Vec<TrackRoute>,
-        pub name: String,
-        pub comment: String,
-    }
-
-    impl Track {
-        pub fn new() -> Self {
-            Self {
-                routes: Vec::new(),
-                name: String::new(),
-                comment: String::new(),
-            }
-        }
-    }
-
-    impl fmt::Debug for Track {
-        fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-            f.debug_struct("Track")
-                .field("name", &self.name)
-                .field("comment", &self.comment)
-                .finish()
-        }
-    }
-
-    impl fmt::Display for Track {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "(").unwrap();
-            if (self.name != "") {write!(f, "name: {:?}", self.name).unwrap();}
-            if (self.comment != "") {write!(f, "comment: {:?}", self.comment).unwrap();}
-            for i in &self.routes {
-                write!(f, "{:?}", i).unwrap();
-            }
-            writeln!(f, ")")
-        }
-    }
-
-
 }
