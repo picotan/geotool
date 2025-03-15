@@ -9,8 +9,8 @@ members = [
 ]
 
 [dependencies.geocore]
-geocore = { path = "../libs/geocore" }
+path = "../libs/geocore"
 
 [dependencies.cachedb]
-cachedb = { path = "../libs/cache" }
+path = "../libs/cache"
 

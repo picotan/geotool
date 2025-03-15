@@ -1,8 +1,9 @@
-use geocore::geometry_core::LatLon;
-use geocore::geometry_core::TileCoord;
-use geocore::geometry_core::Geometry;
-use cachedb::image_cache::Cache;
+use geocore::geometry::geometry_core::LatLon;
+use geocore::geometry::geometry_core::TileCoord;
+use geocore::geometry::geometry_core::Geometry;
+use cachedb::cachedb::image_cache::Cache;
 use std::ffi::OsString;
+use std::io::empty;
 use geocore::gpx_writer::gpx_writer::Writer;
 use geocore::gpx_parser::gpx_parser::Parser;
 
@@ -33,9 +34,15 @@ fn main() {
         },
     };
 
-    let track = Parser::new(&OsString::from("samples/gpx/Garmin.gpx")).unwrap().open();
-    let mut writer = Writer::new("/tmp/a.gpx").unwrap();
-    writer.write(&mut track.unwrap());
+    let track = match Parser::new(&OsString::from("samples/gpx/Garmin.gpx")) {
+        Some(mut p) => p.open_parser().unwrap(),
+        None => panic!("No file found"),
+    };
+    let mut writer = match Writer::new("/tmp/a.gpx") {
+        Ok(w) => w,
+        Err(e) => panic!("Can not open file {:?}", e),
+    };
+    writer.write_gpx(&track);
 
     println!("Home tile: {:?}", c);
     println!("Distance <{:?}>m", lb.distance(&la));
